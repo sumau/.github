@@ -4,70 +4,94 @@ title: Code Security Workflow
 config:
   theme: 'base'
   themeVariables:
-    primaryColor: 'white'
-    primaryBorderColor: 'black'
-    clusterBkg: 'lightgrey'
-    clusterBorder: 'black'
+    primaryColor: '#ffffff'
+    primaryBorderColor: '#334155'
+    clusterBkg: '#f8fafc'
+    clusterBorder: '#cbd5e1'
+    lineColor: '#64748b'
+    textColor: '#0f172a'
 ---
 flowchart LR
- subgraph PCH["Pre-commit hooks"]
+
+ subgraph preCommitHooks["Pre-commit hooks"]
       direction LR
-        C[["Trufflehog: <br> Secrets"]]
-        D[["Presidio: <br> Sensitive data"]]
+        trufflehogHook["Trufflehog:<br>Secrets"]
+        presidioHook["Presidio:<br>Sensitive data"]
   end
- subgraph GHA["GitHub actions"]
+
+ subgraph githubActions["GitHub actions"]
     direction LR
-        n4[["`**GitHub**: <br> Dependency review <br> CodeQL`"]]
-        n6[["`**Custom**: <br>Trufflehog <br> Presidio <br> Pre-commit hook <br>verification`"]]
-        n14[["Language-specific <br>security scanning"]]
+        githubNativeSecurityChecks["GitHub:<br>Dependency review<br>CodeQL"]
+        customSecurityValidation["Custom:<br>Trufflehog<br>Presidio<br>Pre-commit hook<br>verification"]
+        sastScan["Language-specific<br>security scanning<br><em>Under investigation</em>"]
   end
+
  subgraph local["Local"]
-        A(["Local <br>feature branch"])
-        B[["IDE scanning <br> (TBC)"]]
-        PCH
-        
-  end
- subgraph remote["Remote"]
-        GHS["GHS"]
-        n3(["Remote <br> feature branch"])
-        s5["s5"]
-        GHA
-        s6["s6"]
-        s7["s7"]
-  end
- subgraph s5[" "]
-        n15@{ shape: doc, label: "GitHub PR <br>Template"}
-        n9(["Pull request"])
-  end
- subgraph s6[" "]
-        n11@{ shape: doc, label: "GitHub branch <br>protection rules"}
-        n10[["Peer review"]]
-  end
- subgraph s7[" "]
-        n13[["GitHub: <br>Dependabot⏱️"]]
-        n12(["Default branch"])
-  end
- subgraph GHS["GitHub Secret Protection"]
       direction LR
-        custom@{ shape: doc, label: "Custom patterns"}
-        n2[["Secret scanning"]]
-        push[["Push protection"]]
+        localFeatureBranch(["Local<br>feature branch"])
+        ideSecurityScan["IDE scanning<br><em>Under investigation</em>"]
+        preCommitHooks
   end
 
-    A -- write --> B
-    B -- commit --> PCH
-    PCH -- push --> GHS
-    GHS --publish--> n3
-    n3 -- raise --> n9
-    n9 --trigger--> GHA
-    GHA --pass--> n10
-    n10 -- merge --> n12
-    
+ subgraph remote["Remote"]
+      direction LR
+        githubSecretProtection
+        remoteFeatureBranch(["Remote<br>feature branch"])
+        pullRequestStage
+        githubActions
+        reviewStage
+        defaultBranchStage
+  end
 
-    classDef BiggerTitle font-size:18px,fill:white;
+ subgraph pullRequestStage[" "]
+        prTemplate@{ shape: doc, label: "GitHub PR<br>Template" }
+        pullRequest(["Pull request"])
+  end
+
+ subgraph reviewStage[" "]
+        branchProtectionRules@{ shape: doc, label: "GitHub branch<br>protection rules" }
+        peerReview["Peer review"]
+  end
+
+ subgraph defaultBranchStage[" "]
+        dependabot["GitHub:<br>Dependabot⏱️"]
+        defaultBranch(["Default branch"])
+  end
+
+ subgraph githubSecretProtection["GitHub Secret Protection"]
+      direction LR
+        customSecretPatterns@{ shape: doc, label: "Custom patterns" }
+        secretDetection["Secret scanning"]
+        secretPushProtection["Push protection"]
+  end
+
+ subgraph convention["Diagram convention"]
+        conventionState(["Repository / <br>workflow state"])
+        conventionProcess["Process / <br> control / check"]
+        conventionDocument@{ shape: doc, label: "Policy / config <br>/ template" }
+  end
+
+    localFeatureBranch -- write --> ideSecurityScan
+    ideSecurityScan -- commit --> preCommitHooks
+    local -- push --> remote
+    githubSecretProtection -- publish --> remoteFeatureBranch
+    remoteFeatureBranch -- raise --> pullRequest
+    pullRequest -- trigger --> githubActions
+    githubActions -- pass --> peerReview
+    peerReview -- merge --> defaultBranch
+
+    classDef BiggerTitle font-size:18px,fill:#f8fafc,color:#0f172a,stroke:#cbd5e1;
     class remote,local BiggerTitle;
-    classDef Green fill:green, color:white, stroke:black;
-    class A,n3,n12 Green;
-    classDef Grey fill:grey, color:white, stroke:black;
-    class n14,B Grey;
+
+    classDef RepositoryState fill:#dcfce7,color:#166534,stroke:#22c55e,stroke-width:2px;
+    class localFeatureBranch,remoteFeatureBranch,pullRequest,defaultBranch,conventionState RepositoryState;
+
+    classDef Process fill:#ffffff,color:#0f172a,stroke:#64748b,stroke-width:1.5px;
+    class trufflehogHook,presidioHook,githubNativeSecurityChecks,customSecurityValidation,peerReview,dependabot,secretDetection,secretPushProtection,conventionProcess Process;
+
+    classDef Investigation fill:#f1f5f9,color:#94a3b8,stroke:#cbd5e1,stroke-width:1.5px,stroke-dasharray: 5 5;
+    class sastScan,ideSecurityScan Investigation;
+
+    classDef Document fill:#dbeafe,color:#1e3a8a,stroke:#3b82f6,stroke-width:2px;
+    class prTemplate,branchProtectionRules,customSecretPatterns,conventionDocument Document;
 ```

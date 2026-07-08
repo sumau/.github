@@ -2,10 +2,10 @@
 
 ## Summary
 
-This policy explains how:
-- The public can responsibly [report vulnerabilities](#reporting-a-vulnerability) to the Department for Business and Trade (DBT)
-- How DBT developers can follow [secure development practices](#secure-development-practices)
-- How DBT developpers can apply DBT's required [security controls](#security-controls) when working in GitHub
+This policy explains:
+- how members of the public can responsibly [report vulnerabilities](#reporting-a-vulnerability) to the Department for Business and Trade (DBT)
+- how DBT developers can follow [secure development practices](#secure-development-practices)
+- how DBT developers can apply DBT's required [security controls](#security-controls) in GitHub
 
 ---
 
@@ -41,13 +41,13 @@ DBT will not seek prosecution of researchers who act in good faith: stay within 
 
 These requirements apply to all DBT developers.
 
-### Handling Secrets
+### Handling Secrets and Sensitive Data
 
-Leaked secrets (API keys, tokens, passwords) are one of the most common causes of security breaches. Developers must:
+Leaked secrets (API keys, tokens, passwords) are among the most common causes of security breaches, and personal or otherwise sensitive data must be kept out of GitHub just as carefully. Sensitive data includes operational details — such as internal hostnames, IP ranges and security thresholds — that would make DBT systems easier to attack. Developers must:
 
 - Never commit secrets or sensitive data to GitHub
 - Use secure storage for managing secrets
-- Ensure no secrets appear in pull requests (PRs), logs or config files
+- Ensure no secrets or sensitive data appear in pull requests (PRs), logs or config files
 
 The [GitHub Security Standards](https://dbis.sharepoint.com/:w:/r/sites/DDaTDirectorate/Shared%20Documents/Work%20-%20GitHub%20Security/Github%20Security%20Framework/Guidelines%20and%20Policies/GitHub%20Security%20Standards%20v0.6.docx?d=w022dea8105074e36af5450797083c297&csf=1&web=1&e=SR5out) (DBT staff access only) explain what counts as a secret and how to manage secrets securely.
 
@@ -55,13 +55,21 @@ If a secret or sensitive data is pushed to GitHub follow the [GitHub Repository 
 
 ### Handling Vulnerabilities
 
-[CodeQL](https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning-with-codeql) scans your own code for vulnerabilities and [Dependabot](https://docs.github.com/en/code-security/dependabot/dependabot-alerts/about-dependabot-alerts) flags vulnerable dependencies. Their alerts appear in your repository's **Security** tab and must be triaged, not ignored:
+Vulnerabilities can enter through your own code or through the dependencies it relies on. Several GitHub scans guard against them:
+
+- [CodeQL](https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning-with-codeql) analyses your own code, both on pull requests and on a scheduled basis
+- [Dependabot](https://docs.github.com/en/code-security/dependabot/dependabot-alerts/about-dependabot-alerts) flags vulnerable dependencies already in your project, and [Dependabot security updates](https://docs.github.com/en/code-security/dependabot/dependabot-security-updates/about-dependabot-security-updates) raise PRs to fix them automatically
+- [Dependency review](https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-dependency-review) flags vulnerable dependencies a pull request would add before it is merged
+
+We are also investigating IDE scanning and non-GitHub native code security scanning solutions.
+
+Any alerts these scans raise must be triaged, not ignored:
 
 - Fix the vulnerability, or dismiss the alert with a documented reason (e.g. false positive, not exploitable in this context)
 - A PR blocked by a failing security check should be fixed, not bypassed
 - Administrators who do bypass a check must record the justification on the PR and raise an issue to resolve the vulnerability
 
-Alerts must be resolved — fixed or dismissed with a reason — within the following timescales, based on the severity GitHub assigns:
+Alerts must be resolved — fixed or dismissed with a reason — within the following timescales, measured from when the alert is first raised and based on the severity GitHub assigns:
 
 | Severity | Resolve within |
 |---|---|
@@ -70,19 +78,15 @@ Alerts must be resolved — fixed or dismissed with a reason — within the foll
 | Medium | 90 days |
 | Low | 180 days |
 
-Do not discuss unfixed vulnerability details anywhere public — alerts are only visible to users with write access, but PR comments and issues on public repositories are not.
+Do not discuss unfixed vulnerability details anywhere public — vulnerability alerts are visible only to users with write access, but comments on PRs and issues in public repositories are visible to everyone.
 
 ---
 
 ## Security Controls
 
-DBT uses several processes to strengthen the security posture of our GitHub repositories.
+DBT uses several processes to strengthen the security posture of our GitHub repositories. The diagram below shows where some of these controls apply as code moves from your workspace to GitHub, following the secure development lifecycle principle of “shifting left” — catching issues at the earliest possible point.
 
-### Code Security Workflow
-
-The diagram below shows where various controls apply as code moves from your workspace to GitHub, following the secure development lifecycle principle of “shifting left” — catching issues at the earliest possible point.
-
-![Code security workflow](/assets/code_sec_workflow_v2.excalidraw.svg)
+![Code security workflow](/assets/code_sec_workflow.excalidraw.svg)
 
 ### Security Checklist
 
@@ -104,19 +108,11 @@ All internal contributors must complete at least **one** of the following free c
 | [Kontra: OWASP Top 10 for Web](https://application.security/free/owasp-top-10) | ~2.5 hrs | 28 short interactive exercises based on real-world vulnerabilities. Browser-based, nothing to install. Requires signup with a work email |
 | [Snyk Learn: Security for Developers](https://learn.snyk.io/learning-paths/security-for-developers/) | ~4 hrs | 16 lessons going deeper into specific attack techniques (injection variants, SSRF, prototype pollution etc.). Free account required; completion certificate available |
 
-For those who want to go further, the [PortSwigger Web Security Academy](https://portswigger.net/web-security) offers free, in-depth hands-on labs across the full range of web vulnerabilities, and the [Snyk Learn hardcoded secrets lesson](https://learn.snyk.io/lesson/hardcoded-secrets/) (~20 mins) is a recommended supplement that reinforces the [Handling Secrets](#handling-secrets) requirements above.
+For those who want to go further, the [PortSwigger Web Security Academy](https://portswigger.net/web-security) offers free, in-depth hands-on labs across the full range of web vulnerabilities, and the [Snyk Learn hardcoded secrets lesson](https://learn.snyk.io/lesson/hardcoded-secrets/) (~20 mins) is a recommended supplement that reinforces the [Handling Secrets and Sensitive Data](#handling-secrets-and-sensitive-data) requirements above.
 
 #### GitHub Safety Tips
 
 Internal contributors should review the [GitHub Safety Tips](https://uktrade.atlassian.net/wiki/x/n4AEKQE) (DBT staff access only) to understand how to protect themselves when coding in the open.
-
-#### Pre-Commit Hooks
-
-DBT requires all contributors to use the organisation-approved [pre-commit](https://pre-commit.com/) hooks before committing. A GitHub Actions workflow blocks PRs where the hooks have not run.
-
-Hooks catch secrets and other issues on your machine, before a commit is even created — the earliest and cheapest point to stop a leak, since anything that reaches GitHub must be treated as compromised.
-
-For more information and setup guidance, see the [uktrade/github-standards](https://github.com/uktrade/github-standards) repository.
 
 ---
 
@@ -126,7 +122,7 @@ An organisation administrator applies these centrally, and they cannot be weaken
 
 #### GitHub Security Configuration
 
-DBT has introduced an organisation-wide GitHub [security configuration](https://docs.github.com/en/code-security/how-tos/secure-at-scale/configure-organization-security/establish-complete-coverage/apply-custom-configuration), that applies the required security checks to every repository. New repositories get this configuration by default, but existing ones must have it enabled before they can be made public. Over time, it will fully replace the old configuration across the `uktrade` organisation.
+DBT has introduced an organisation-wide GitHub [security configuration](https://docs.github.com/en/code-security/how-tos/secure-at-scale/configure-organization-security/establish-complete-coverage/apply-custom-configuration) that applies the required security checks to every repository. New repositories get this configuration by default, but existing ones must have it enabled before they can be made public. Over time, it will fully replace the old configuration across the `uktrade` organisation.
 
 An organisation administrator must apply it — follow the [step-by-step instructions](https://github.com/uktrade/.github/blob/main/docs/github-security-configuration.md).
 
@@ -139,7 +135,7 @@ View or set custom properties under **Settings → Custom properties**:
 
 **Mandatory**
 - `reusable_workflow_opt_in` — set to `true`
-- `scs_portfolio` — the portfolio associated with your CSC. If your portfolio is missing, this can be added by raising a ticket with the SRE team
+- `scs_portfolio` — the portfolio associated with your Senior Civil Servant (SCS). If your portfolio is missing, this can be added by raising a ticket with the SRE team
 
 **Optional**
 - `is_docker` — for repositories that build Docker images
@@ -157,18 +153,29 @@ Organisation administrators and repository administrators have been added to the
 
 Repository administrators may add additional rules to their own repositories, but cannot weaken the organisation ruleset: where rules overlap, the most restrictive rule applies. For example, a repository ruleset that drops the required number of approvers to 0 would have no effect, while one that raises it to 3 would apply.
 
-#### Push Protection
+#### GitHub Secret Protection
 
-[Push protection](https://docs.github.com/en/code-security/concepts/secret-security/push-protection) is required for all repositories using the DBT GitHub security configuration. It scans every push for known secret formats and rejects it before the secret can enter the repository's history.
-DBT also defines [custom secret-scanning patterns](https://docs.github.com/en/code-security/how-tos/secure-your-secrets/customize-leak-detection/define-custom-patterns) to catch DBT-specific secrets that GitHub's built-in patterns would miss.
+The DBT GitHub security configuration enables two complementary features. [Push protection](https://docs.github.com/en/code-security/concepts/secret-security/push-protection) blocks pushes containing high-confidence secret formats, stopping them before they reach the repository's history. [Secret scanning](https://docs.github.com/en/code-security/secret-scanning/introduction/about-secret-scanning) covers a broader range, detecings secrets already committed and raising alerts in the **Security** tab. Both can apply [custom patterns](https://docs.github.com/en/code-security/how-tos/secure-your-secrets/customize-leak-detection/define-custom-patterns) for DBT-specific secrets.
 
-You should confirm that push protection is enabled on your repository. Please raise a ticket with the SRE team if you need additional patterns.
+Confirm both features are enabled on your repository. Never bypass a push-protection block — remove the secret from your commit instead. If you need additional custom patterns, raise a ticket with the SRE team.
+
+#### Vulnerability Scanning
+
+The DBT GitHub security configuration also enables the features described under [Handling Vulnerabilities](#handling-vulnerabilities) — CodeQL, Dependabot, Dependabot security updates and dependency review. Confirm these are active on your repository.
 
 ---
 
 ### Repository-Level Controls
 
 Defences set up within the repository itself.
+
+#### Pre-Commit Hooks
+
+Repositories must include a `.pre-commit-config.yaml` that runs the organisation-approved [pre-commit](https://pre-commit.com/) hooks, and each contributor must install them locally. The hooks use [Trufflehog](https://github.com/trufflesecurity/trufflehog) to detect secrets and [Presidio](https://microsoft.github.io/presidio/) to detect sensitive data. They run on your machine before a commit is even created — the earliest and cheapest point to stop a leak, since anything that reaches GitHub must be treated as compromised.
+
+As a backstop, a GitHub Actions workflow (applied via the repository's custom properties) re-runs the same scans and blocks any PR where the hooks were skipped locally. Repository administrators can still merge past a failing check.
+
+For more information and setup guidance, see the [uktrade/github-standards](https://github.com/uktrade/github-standards) repository.
 
 #### CODEOWNERS
 

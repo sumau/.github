@@ -1,0 +1,455 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Code Security Workflow — revised</title>
+<style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style>
+<style>
+  :root {
+    --bg: #F7F8FA;
+    --card: #FFFFFF;
+    --lane: #EFF1F5;
+    --group: #F4F6F9;
+    --ink: #212836;
+    --muted: #5A6474;
+    --line: #C6CDD8;
+    --edge: #6B7585;
+    --state-fill: #E3F4E9;
+    --state-stroke: #2F9E60;
+    --state-ink: #1D6B40;
+    --policy-fill: #E7EEFB;
+    --policy-stroke: #3F6FD8;
+    --policy-ink: #2C55AB;
+    --control-stroke: #39414F;
+    --zone: rgba(63, 111, 216, 0.045);
+    --marker: #C4780C;
+    --marker-ink: #FFFFFF;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #13161B;
+      --card: #1A1E25;
+      --lane: #20242C;
+      --group: #262B34;
+      --ink: #E8ECF2;
+      --muted: #9AA4B2;
+      --line: #3A4250;
+      --edge: #8C97A8;
+      --state-fill: #16301F;
+      --state-stroke: #4CBF7E;
+      --state-ink: #8ADCAE;
+      --policy-fill: #1A2740;
+      --policy-stroke: #6E97E8;
+      --policy-ink: #A3BFF2;
+      --control-stroke: #A8B2C0;
+      --zone: rgba(110, 151, 232, 0.07);
+      --marker: #E09A2B;
+      --marker-ink: #1A1105;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #13161B;
+    --card: #1A1E25;
+    --lane: #20242C;
+    --group: #262B34;
+    --ink: #E8ECF2;
+    --muted: #9AA4B2;
+    --line: #3A4250;
+    --edge: #8C97A8;
+    --state-fill: #16301F;
+    --state-stroke: #4CBF7E;
+    --state-ink: #8ADCAE;
+    --policy-fill: #1A2740;
+    --policy-stroke: #6E97E8;
+    --policy-ink: #A3BFF2;
+    --control-stroke: #A8B2C0;
+    --zone: rgba(110, 151, 232, 0.07);
+    --marker: #E09A2B;
+    --marker-ink: #1A1105;
+  }
+  :root[data-theme="light"] {
+    --bg: #F7F8FA;
+    --card: #FFFFFF;
+    --lane: #EFF1F5;
+    --group: #F4F6F9;
+    --ink: #212836;
+    --muted: #5A6474;
+    --line: #C6CDD8;
+    --edge: #6B7585;
+    --state-fill: #E3F4E9;
+    --state-stroke: #2F9E60;
+    --state-ink: #1D6B40;
+    --policy-fill: #E7EEFB;
+    --policy-stroke: #3F6FD8;
+    --policy-ink: #2C55AB;
+    --control-stroke: #39414F;
+    --zone: rgba(63, 111, 216, 0.045);
+    --marker: #C4780C;
+    --marker-ink: #FFFFFF;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    line-height: 1.55;
+    padding: 40px 32px 64px;
+  }
+  .wrap { max-width: 1640px; margin: 0 auto; }
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--marker);
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0 0 10px;
+    text-wrap: balance;
+  }
+  .intro {
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 68ch;
+    margin: 0 0 28px;
+  }
+  .intro strong { color: var(--ink); font-weight: 600; }
+
+  .diagram-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px;
+    overflow-x: auto;
+    margin-bottom: 40px;
+  }
+  .diagram-card svg { display: block; min-width: 1400px; width: 100%; height: auto; }
+
+  h2 {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 18px;
+  }
+  .changes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 18px 28px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .changes li { display: flex; gap: 12px; align-items: flex-start; }
+  .num {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--marker);
+    color: var(--marker-ink);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+  }
+  .changes b { display: block; font-size: 14.5px; font-weight: 600; margin-bottom: 2px; }
+  .changes p { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .foot {
+    margin-top: 36px;
+    font-size: 13px;
+    color: var(--muted);
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+    max-width: 76ch;
+  }
+  .foot code {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    background: var(--lane);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+
+  /* --- SVG classes --- */
+  .lane { fill: var(--lane); stroke: var(--line); stroke-width: 1; }
+  .zone { fill: var(--zone); }
+  .divider { stroke: var(--policy-stroke); stroke-width: 1.2; stroke-dasharray: 5 5; opacity: 0.55; }
+  .grp { fill: var(--group); stroke: var(--line); stroke-width: 1; }
+  .state { fill: var(--state-fill); stroke: var(--state-stroke); stroke-width: 1.5; }
+  .ctrl { fill: var(--card); stroke: var(--control-stroke); stroke-width: 1.3; }
+  .invest { fill: var(--card); stroke: var(--edge); stroke-width: 1.3; stroke-dasharray: 6 5; }
+  .policy { fill: var(--policy-fill); stroke: var(--policy-stroke); stroke-width: 1.3; }
+  .flow { stroke: var(--edge); stroke-width: 1.6; fill: none; }
+  .flow-dash { stroke: var(--edge); stroke-width: 1.5; fill: none; stroke-dasharray: 5 5; }
+  .attach { stroke: var(--policy-stroke); stroke-width: 1.2; stroke-dasharray: 2 4; opacity: 0.8; }
+  .mark { fill: var(--marker); }
+
+  .lane-h { font: 600 17px "Avenir Next", "Segoe UI", system-ui, sans-serif; fill: var(--ink); }
+  .node-t { font: 500 14.5px "Avenir Next", "Segoe UI", system-ui, sans-serif; fill: var(--ink); }
+  .state-t { font: 600 14.5px "Avenir Next", "Segoe UI", system-ui, sans-serif; fill: var(--state-ink); }
+  .policy-t { font: 500 13.5px "Avenir Next", "Segoe UI", system-ui, sans-serif; fill: var(--policy-ink); }
+  .invest-t { font: 500 14px "Avenir Next", "Segoe UI", system-ui, sans-serif; fill: var(--muted); }
+  .grp-t { font: 600 13px "Avenir Next", "Segoe UI", system-ui, sans-serif; fill: var(--muted); }
+  .small-t { font: 500 13px "Avenir Next", "Segoe UI", system-ui, sans-serif; fill: var(--ink); }
+  .edge-t { font: 500 12px ui-monospace, "SF Mono", Menlo, monospace; fill: var(--edge); }
+  .chip-r { fill: none; stroke: var(--edge); stroke-width: 1; opacity: 0.75; }
+  .chip-t {
+    font: 600 10px ui-monospace, "SF Mono", Menlo, monospace;
+    fill: var(--muted);
+    letter-spacing: 0.12em;
+  }
+  .mark-t { font: 700 13px ui-monospace, "SF Mono", Menlo, monospace; fill: var(--marker-ink); }
+  .legend-t { font: 500 12.5px "Avenir Next", "Segoe UI", system-ui, sans-serif; fill: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <p class="eyebrow">Proposed revision</p>
+  <h1>Code Security Workflow</h1>
+  <p class="intro">
+    Same checks and sequence as the current draft (<strong>code_sec_workflow_copy</strong>), restructured
+    for readability. Each amber marker on the diagram corresponds to a numbered note below.
+  </p>
+
+  <div class="diagram-card">
+    <svg viewBox="0 0 1560 862" xmlns="http://www.w3.org/2000/svg" role="img"
+         aria-label="Revised code security workflow: phase 1 commit and push, phase 2 review and merge, with five annotated changes">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--edge)"></path>
+        </marker>
+      </defs>
+
+      <!-- ============ LANE 1 : Commit & push ============ -->
+      <rect class="lane" x="20" y="20" width="1520" height="310" rx="14"></rect>
+      <!-- GitHub zone tint (right of push boundary) -->
+      <path class="zone" d="M810,20 H1526 Q1540,20 1540,34 V316 Q1540,330 1526,330 H810 Z"></path>
+      <line class="divider" x1="810" y1="20" x2="810" y2="330"></line>
+
+      <text class="lane-h" x="44" y="52">Phase 1 · Commit &amp; push</text>
+
+      <!-- runtime chips -->
+      <rect class="chip-r" x="44" y="66" width="168" height="21" rx="10.5"></rect>
+      <text class="chip-t" x="128" y="80.5" text-anchor="middle">RUNS ON YOUR MACHINE</text>
+      <rect class="chip-r" x="830" y="66" width="122" height="21" rx="10.5"></rect>
+      <text class="chip-t" x="891" y="80.5" text-anchor="middle">RUNS ON GITHUB</text>
+
+      <!-- Local feature branch -->
+      <rect class="state" x="60" y="170" width="180" height="64" rx="14"></rect>
+      <text class="state-t" x="150" y="197" text-anchor="middle">Local</text>
+      <text class="state-t" x="150" y="217" text-anchor="middle">feature branch</text>
+
+      <line class="flow" x1="240" y1="202" x2="296" y2="202" marker-end="url(#arrow)"></line>
+      <text class="edge-t" x="268" y="192" text-anchor="middle">write</text>
+
+      <!-- IDE scanning (under investigation) -->
+      <rect class="invest" x="300" y="170" width="170" height="64" rx="3"></rect>
+      <text class="invest-t" x="385" y="207" text-anchor="middle">IDE scanning</text>
+
+      <line class="flow" x1="470" y1="202" x2="536" y2="202" marker-end="url(#arrow)"></line>
+      <text class="edge-t" x="503" y="192" text-anchor="middle">commit</text>
+
+      <!-- Pre-commit hook group -->
+      <rect class="grp" x="540" y="110" width="220" height="196" rx="12"></rect>
+      <text class="grp-t" x="556" y="136">Pre-commit hook</text>
+      <rect class="ctrl" x="556" y="150" width="188" height="64" rx="3"></rect>
+      <text class="small-t" x="650" y="177" text-anchor="middle">Trufflehog:</text>
+      <text class="small-t" x="650" y="196" text-anchor="middle">Secrets</text>
+      <rect class="ctrl" x="556" y="226" width="188" height="64" rx="3"></rect>
+      <text class="small-t" x="650" y="253" text-anchor="middle">Presidio:</text>
+      <text class="small-t" x="650" y="272" text-anchor="middle">Sensitive data</text>
+
+      <line class="flow" x1="760" y1="202" x2="866" y2="202" marker-end="url(#arrow)"></line>
+      <text class="edge-t" x="813" y="192" text-anchor="middle">push</text>
+
+      <!-- GitHub Secret Protection group -->
+      <rect class="grp" x="870" y="86" width="250" height="236" rx="12"></rect>
+      <text class="grp-t" x="886" y="112">GitHub Secret Protection</text>
+      <path class="policy" d="M886,126 h218 v40 c-24,9 -49,-9 -73,0 c-24,9 -49,-9 -73,0 c-24,9 -48,-9 -72,0 z"></path>
+      <text class="policy-t" x="995" y="152" text-anchor="middle">Custom patterns</text>
+      <path class="policy" d="M886,184 h218 v40 c-24,9 -49,-9 -73,0 c-24,9 -49,-9 -73,0 c-24,9 -48,-9 -72,0 z"></path>
+      <text class="policy-t" x="995" y="210" text-anchor="middle">Push protection</text>
+      <rect class="ctrl" x="886" y="242" width="218" height="48" rx="3"></rect>
+      <text class="small-t" x="995" y="271" text-anchor="middle">Secret scanning</text>
+
+      <!-- marker 1 : push boundary -->
+      <circle class="mark" cx="810" cy="46" r="12"></circle>
+      <text class="mark-t" x="810" y="50.5" text-anchor="middle">1</text>
+
+      <!-- ============ hand-off : checks pass ============ -->
+      <path class="flow" d="M995,322 V366 H150 V536" marker-end="url(#arrow)"></path>
+      <text class="edge-t" x="565" y="357" text-anchor="middle">checks pass</text>
+
+      <!-- marker 2 : hand-off exits from the last gate -->
+      <circle class="mark" cx="1026" cy="348" r="12"></circle>
+      <text class="mark-t" x="1026" y="352.5" text-anchor="middle">2</text>
+
+      <!-- ============ LANE 2 : Review & merge ============ -->
+      <rect class="lane" x="20" y="410" width="1520" height="350" rx="14"></rect>
+      <rect class="zone" x="20" y="410" width="1520" height="350" rx="14"></rect>
+
+      <text class="lane-h" x="44" y="442">Phase 2 · Review &amp; merge</text>
+      <rect class="chip-r" x="44" y="456" width="122" height="21" rx="10.5"></rect>
+      <text class="chip-t" x="105" y="470.5" text-anchor="middle">RUNS ON GITHUB</text>
+
+      <!-- marker 5 : lane naming -->
+      <circle class="mark" cx="280" cy="436" r="12"></circle>
+      <text class="mark-t" x="280" y="440.5" text-anchor="middle">5</text>
+
+      <!-- Remote feature branch -->
+      <rect class="state" x="60" y="578" width="180" height="64" rx="14"></rect>
+      <text class="state-t" x="150" y="605" text-anchor="middle">Remote</text>
+      <text class="state-t" x="150" y="625" text-anchor="middle">feature branch</text>
+
+      <line class="flow" x1="240" y1="610" x2="296" y2="610" marker-end="url(#arrow)"></line>
+      <text class="edge-t" x="268" y="600" text-anchor="middle">raise</text>
+
+      <!-- PR template policy + Pull request -->
+      <path class="policy" d="M300,484 h160 v48 c-18,8 -36,-8 -54,0 c-18,8 -36,-8 -54,0 c-17,8 -35,-8 -52,0 z"></path>
+      <text class="policy-t" x="380" y="505" text-anchor="middle">GitHub PR</text>
+      <text class="policy-t" x="380" y="523" text-anchor="middle">Template</text>
+      <line class="attach" x1="380" y1="540" x2="380" y2="578"></line>
+      <rect class="state" x="300" y="578" width="160" height="64" rx="14"></rect>
+      <text class="state-t" x="380" y="617" text-anchor="middle">Pull request</text>
+
+      <line class="flow" x1="460" y1="610" x2="516" y2="610" marker-end="url(#arrow)"></line>
+      <text class="edge-t" x="488" y="600" text-anchor="middle">trigger</text>
+
+      <!-- GitHub Actions group -->
+      <rect class="grp" x="520" y="470" width="250" height="272" rx="12"></rect>
+      <text class="grp-t" x="536" y="496">GitHub Actions</text>
+      <rect class="ctrl" x="536" y="510" width="218" height="76" rx="3"></rect>
+      <text class="small-t" x="645" y="533" text-anchor="middle">Custom:</text>
+      <text class="small-t" x="645" y="551" text-anchor="middle">Trufflehog · Presidio</text>
+      <text class="small-t" x="645" y="569" text-anchor="middle">Pre-commit verification</text>
+      <rect class="invest" x="536" y="596" width="218" height="60" rx="3"></rect>
+      <text class="invest-t" x="645" y="620" text-anchor="middle">GitHub: Dependency</text>
+      <text class="invest-t" x="645" y="638" text-anchor="middle">review · CodeQL</text>
+      <rect class="invest" x="536" y="666" width="218" height="56" rx="3"></rect>
+      <text class="invest-t" x="645" y="688" text-anchor="middle">Language-specific</text>
+      <text class="invest-t" x="645" y="706" text-anchor="middle">security scanning</text>
+
+      <line class="flow" x1="770" y1="610" x2="846" y2="610" marker-end="url(#arrow)"></line>
+      <text class="edge-t" x="808" y="600" text-anchor="middle">scans pass</text>
+
+      <!-- marker 3 : distinct edge labels -->
+      <circle class="mark" cx="808" cy="572" r="12"></circle>
+      <text class="mark-t" x="808" y="576.5" text-anchor="middle">3</text>
+
+      <!-- Branch protection policy + Peer review -->
+      <path class="policy" d="M850,484 h170 v48 c-19,8 -38,-8 -57,0 c-19,8 -38,-8 -57,0 c-19,8 -38,-8 -56,0 z"></path>
+      <text class="policy-t" x="935" y="505" text-anchor="middle">GitHub branch</text>
+      <text class="policy-t" x="935" y="523" text-anchor="middle">protection rules</text>
+      <line class="attach" x1="935" y1="540" x2="935" y2="578"></line>
+      <rect class="ctrl" x="850" y="578" width="170" height="64" rx="3"></rect>
+      <text class="node-t" x="935" y="615" text-anchor="middle">Peer review</text>
+
+      <line class="flow" x1="1020" y1="610" x2="1076" y2="610" marker-end="url(#arrow)"></line>
+      <text class="edge-t" x="1048" y="600" text-anchor="middle">merge</text>
+
+      <!-- Default branch -->
+      <rect class="state" x="1080" y="578" width="180" height="64" rx="14"></rect>
+      <text class="state-t" x="1170" y="617" text-anchor="middle">Default branch</text>
+
+      <!-- Dependabot, off the main line -->
+      <path class="flow-dash" d="M1230,578 V516 H1326" marker-end="url(#arrow)"></path>
+      <text class="edge-t" x="1244" y="558">⏱ scheduled scan</text>
+      <rect class="ctrl" x="1330" y="484" width="190" height="64" rx="3"></rect>
+      <text class="node-t" x="1425" y="512" text-anchor="middle">GitHub:</text>
+      <text class="node-t" x="1425" y="532" text-anchor="middle">Dependabot</text>
+
+      <!-- marker 4 : dependabot detached -->
+      <circle class="mark" cx="1302" cy="468" r="12"></circle>
+      <text class="mark-t" x="1302" y="472.5" text-anchor="middle">4</text>
+
+      <!-- ============ Legend ============ -->
+      <rect class="state" x="44" y="800" width="30" height="20" rx="7"></rect>
+      <text class="legend-t" x="84" y="815">Repository / workflow state</text>
+
+      <rect class="ctrl" x="288" y="800" width="30" height="20" rx="2"></rect>
+      <text class="legend-t" x="328" y="815">Process / control / check</text>
+
+      <path class="policy" d="M516,800 h30 v16 c-4,4 -8,-4 -12,0 c-4,4 -8,-4 -12,0 c-2,2 -4,-2 -6,0 z"></path>
+      <text class="legend-t" x="556" y="815">Policy / config / template</text>
+
+      <rect class="invest" x="742" y="800" width="30" height="20" rx="2"></rect>
+      <text class="legend-t" x="782" y="815">Under investigation</text>
+
+      <rect class="chip-r" x="964" y="800" width="52" height="20" rx="10"></rect>
+      <text class="chip-t" x="990" y="814" text-anchor="middle">CHIP</text>
+      <text class="legend-t" x="1028" y="815">Where a check runs</text>
+
+      <circle class="mark" cx="1198" cy="810" r="10"></circle>
+      <text class="mark-t" x="1198" y="814.5" text-anchor="middle" style="font-size:11px">n</text>
+      <text class="legend-t" x="1220" y="815">Change vs. current draft</text>
+    </svg>
+  </div>
+
+  <h2>What changed, and why</h2>
+  <ol class="changes">
+    <li>
+      <span class="num">1</span>
+      <div>
+        <b>The push boundary is explicit</b>
+        <p>Dropping the Local / Remote lanes lost real information. The dashed divider and
+        "runs on…" chips restore it: the pre-commit hook clearly runs on your machine, while
+        Secret Protection runs server-side — without dedicating whole lanes to geography.</p>
+      </div>
+    </li>
+    <li>
+      <span class="num">2</span>
+      <div>
+        <b>One unbroken path</b>
+        <p>The hand-off to phase 2 now exits from GitHub Secret Protection — the <em>last</em> gate
+        of phase 1 — instead of dropping from the first box. The eye follows
+        write → commit → push → checks pass → raise without backtracking.</p>
+      </div>
+    </li>
+    <li>
+      <span class="num">3</span>
+      <div>
+        <b>No duplicate edge labels</b>
+        <p>"pass" appeared twice meaning two different things. Now the phase hand-off reads
+        "checks pass" and the Actions gate reads "scans pass" — each label names its own gate.</p>
+      </div>
+    </li>
+    <li>
+      <span class="num">4</span>
+      <div>
+        <b>Dependabot is off the main line</b>
+        <p>It is a scheduled watcher of the default branch, not step 8 of the pipeline.
+        A dashed "scheduled scan" arrow makes that relationship explicit instead of implying
+        it runs after every merge.</p>
+      </div>
+    </li>
+    <li>
+      <span class="num">5</span>
+      <div>
+        <b>Lane names share one grammar</b>
+        <p>Both phases are now verb phrases — "Commit &amp; push", "Review &amp; merge" —
+        so the lanes read as steps of a workflow rather than a mix of action and artifact.</p>
+      </div>
+    </li>
+  </ol>
+
+  <p class="foot">
+    Shapes follow the existing diagram conventions from
+    <code>code_sec_workflow_copy.excalidraw.svg</code> — green rounded = state, plain rectangle =
+    control, blue wavy = policy, dashed = under investigation — so this layout can be recreated
+    directly in Excalidraw.
+  </p>
+</div>
+
+</body>
+</html>
